@@ -10,11 +10,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2019_08_06_180803) do
+ActiveRecord::Schema.define(version: 2019_08_07_074824) do
 
   create_table "comments", force: :cascade do |t|
     t.text "body"
-    t.boolean "published"
+    t.boolean "published", default: false
     t.integer "post_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -26,6 +26,14 @@ ActiveRecord::Schema.define(version: 2019_08_06_180803) do
     t.text "subtitle"
     t.text "body"
     t.string "created_by"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "users", force: :cascade do |t|
+    t.string "name"
+    t.string "email"
+    t.string "password_digest"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end

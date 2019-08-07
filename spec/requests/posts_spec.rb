@@ -1,17 +1,18 @@
 require 'rails_helper'
 
-RSpec.describe 'Posts API', type: :request do
-  # initialize test data
-  let!(:posts) { create_list(:post, 10) }
+RSpec.describe 'Post API', type: :request do
+  # add posts owner
+  let(:user) { create(:user) }
+  let!(:posts) { create_list(:post, 10, created_by: user.id) }
   let(:post_id) { posts.first.id }
+  # authorize request
+  let(:headers) { valid_headers }
 
-  # Test suite for GET /posts
   describe 'GET /posts' do
-    # make HTTP get request before each example
-    before { get '/posts' }
+    # update request with headers
+    before { get '/posts', params: {}, headers: headers }
 
     it 'returns posts' do
-      # Note `json` is a custom helper to parse JSON responses
       expect(json).not_to be_empty
       expect(json.size).to eq(10)
     end
@@ -21,9 +22,8 @@ RSpec.describe 'Posts API', type: :request do
     end
   end
 
-  # Test suite for GET /posts/:id
   describe 'GET /posts/:id' do
-    before { get "/posts/#{post_id}" }
+    before { get "/posts/#{post_id}", params: {}, headers: headers }
 
     context 'when the record exists' do
       it 'returns the post' do
@@ -44,23 +44,22 @@ RSpec.describe 'Posts API', type: :request do
       end
 
       it 'returns a not found message' do
-        expect(response.body).to match(/Couldn't find Todo/)
+        expect(response.body).to match(/Couldn't find Post/)
       end
     end
   end
 
-  # Test suite for POST /posts
   describe 'POST /posts' do
-    # valid payload
-    let(:valid_attributes) { { title: 'Learn Elm', subtitle: 'a' * 50, body: 'a' * 400, user_id: '1' } }
+    let(:valid_attributes) do
+      # send json payload
+      { title: 'Learn Elm', subtitle: 'a' * 40, body: 'a' * 300, created_by: user.id.to_s }.to_json
+    end
 
-    context 'when the request is valid' do
-      before { post '/posts', params: valid_attributes }
+    context 'when request is valid' do
+      before { post '/posts', params: valid_attributes, headers: headers }
 
       it 'creates a post' do
         expect(json['title']).to eq('Learn Elm')
-        expect(json['subtitle']).to eq('a' * 50)
-        expect(json['body']).to eq('a' * 400)
       end
 
       it 'returns status code 201' do
@@ -69,25 +68,25 @@ RSpec.describe 'Posts API', type: :request do
     end
 
     context 'when the request is invalid' do
-      before { post '/posts', params: { title: 'Foobar' } }
+      let(:invalid_attributes) { { title: nil }.to_json }
+      before { post '/posts', params: invalid_attributes, headers: headers }
 
       it 'returns status code 422' do
         expect(response).to have_http_status(422)
       end
 
       it 'returns a validation failure message' do
-        expect(response.body)
-            .to match(/Validation failed: user_id can't be blank/)
+        expect(json['message'])
+            .to match(/Validation failed: Title can't be blank/)
       end
     end
   end
 
-  # Test suite for PUT /posts/:id
   describe 'PUT /posts/:id' do
-    let(:valid_attributes) { { title: 'Shopping', subtitle: 'a' * 50, body: 'a' * 400 } }
+    let(:valid_attributes) { { title: 'Shopping', subtitle: 'a' * 40, body: 'a' * 300 }.to_json }
 
     context 'when the record exists' do
-      before { put "/posts/#{post_id}", params: valid_attributes }
+      before { put "/posts/#{post_id}", params: valid_attributes, headers: headers }
 
       it 'updates the record' do
         expect(response.body).to be_empty
@@ -99,9 +98,8 @@ RSpec.describe 'Posts API', type: :request do
     end
   end
 
-  # Test suite for DELETE /post/:id
   describe 'DELETE /posts/:id' do
-    before { delete "/posts/#{todo_id}" }
+    before { delete "/posts/#{post_id}", params: {}, headers: headers }
 
     it 'returns status code 204' do
       expect(response).to have_http_status(204)
